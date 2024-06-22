@@ -2,6 +2,7 @@ const fs = require("fs");
 const { google } = require("googleapis");
 const path = require("path");
 const { queryAsync } = require("./routes/users");
+const { Readable } = require('stream');
 
 const CREDENTIALS_PATH = path.join(__dirname, "drive_creds.json");
 const SCOPES = ["https://www.googleapis.com/auth/drive.file"];
@@ -13,27 +14,34 @@ const auth = new google.auth.GoogleAuth({
 
 const drive = google.drive({ version: "v3", auth });
 
-async function uploadFileToDrive(filePath, mimeType) {
+async function uploadFileToDrive(fileBuffer, mimeType, fileName) {
+	const fileStream = Readable.from(fileBuffer); 
 	const fileMetadata = {
-		name: path.basename(filePath),
+		name: fileName,
 	};
 	const media = {
 		mimeType: mimeType,
-		body: fs.createReadStream(filePath),
+		body: fileStream,
 	};
 
-	const response = await drive.files.create({
-		resource: fileMetadata,
-		media: media,
-		fields: "id, webViewLink, webContentLink",
-	});
+	try {
+		const response = await drive.files.create({
+			resource: fileMetadata,
+			media: media,
+			fields: "id, webViewLink, webContentLink",
+		});
 
-	await setFilePublic(response.data.id);
-	return await insertImageData(
-		response.data.id,
-		response.data.webViewLink,
-		response.data.webContentLink
-	);
+		await setFilePublic(response.data.id);
+		return await insertImageData(
+			response.data.id,
+			response.data.webViewLink,
+			response.data.webContentLink
+		);
+	} catch (error) {
+		throw new Error(
+			`Error uploading file to Google Drive: ${error.message}`
+		);
+	}
 }
 
 async function setFilePublic(fileId) {

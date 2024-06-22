@@ -69,24 +69,15 @@ router.post("/create", async (req, res) => {
 	let imageId = null;
 	if (req.files && req.files.image) {
 		let imageFile = req.files.image;
-		let uploadPath = path.join(
-			__dirname,
-			"../uploads/",
-			imageFile.name
-		);
-
-		// Move the file to the upload directory
-		await imageFile.mv(uploadPath);
 
 		try {
 			const uploadResult = await uploadFileToDrive(
-				uploadPath,
-				imageFile.mimetype
-			);
+                        imageFile.data,
+                        imageFile.mimetype,
+                        imageFile.name
+                    );
 			imageId = uploadResult;
 
-			// Delete the local file after uploading to Google Drive
-			fs.unlinkSync(uploadPath);
 		} catch (err) {
 			return res.status(500).json({ error: err.message });
 		}
@@ -167,30 +158,20 @@ router.post("/update", async (req, res) => {
 			]);
 
 			let newImageFile = req.files.image;
-			let uploadPath = path.join(
-				__dirname,
-				"../uploads/",
-				newImageFile.name
-			);
-
-			// Move the new file to the upload directory
-			await newImageFile.mv(uploadPath);
 
 			try {
 				// Upload new image to Google Drive
 				const uploadResult = await uploadFileToDrive(
-					uploadPath,
-					newImageFile.mimetype
-				);
+                              newImageFile.data,
+                              newImageFile.mimetype,
+                              newImageFile.name
+                          );
 				imageId = uploadResult;
 
 				// Delete the old image from Google Drive
 				if (blogData[0].image) {
 					await deleteImage(blogData[0].image);
 				}
-
-				// Delete the local file after uploading to Google Drive
-				fs.unlinkSync(uploadPath);
 
 			} catch (err) {
 				return res.status(500).json({
