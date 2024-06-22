@@ -72,12 +72,11 @@ router.post("/create", async (req, res) => {
 
 		try {
 			const uploadResult = await uploadFileToDrive(
-                        imageFile.data,
-                        imageFile.mimetype,
-                        imageFile.name
-                    );
+				imageFile.data,
+				imageFile.mimetype,
+				imageFile.name
+			);
 			imageId = uploadResult;
-
 		} catch (err) {
 			return res.status(500).json({ error: err.message });
 		}
@@ -162,17 +161,16 @@ router.post("/update", async (req, res) => {
 			try {
 				// Upload new image to Google Drive
 				const uploadResult = await uploadFileToDrive(
-                              newImageFile.data,
-                              newImageFile.mimetype,
-                              newImageFile.name
-                          );
+					newImageFile.data,
+					newImageFile.mimetype,
+					newImageFile.name
+				);
 				imageId = uploadResult;
 
 				// Delete the old image from Google Drive
 				if (blogData[0].image) {
 					await deleteImage(blogData[0].image);
 				}
-
 			} catch (err) {
 				return res.status(500).json({
 					error: "Failed to upload new image to Google Drive",
@@ -287,18 +285,17 @@ router.post("/by-tags", async (req, res) => {
 	const tagsArray = tags.split(",").map((tag) => tag.trim());
 
 	const query = `
-          SELECT DISTINCT blog.*
-          FROM blog
-          JOIN tag ON blog.id = tag.blog_id
-          WHERE tag.tag IN (?)
-          AND blog.active = ?
-      `;
+            SELECT DISTINCT blog.*
+            FROM blog
+            JOIN tag ON blog.id = tag.blog_id
+            WHERE ${tagsArray.map(() => "tag.tag LIKE ?").join(" OR ")}
+            AND blog.active = ?
+            `;
+
+	const queryParams = [...tagsArray.map((tag) => `%${tag}%`), true];
 
 	try {
-		const discussions = await fetchDiscussions(query, [
-			tagsArray,
-			active,
-		]);
+		const discussions = await fetchDiscussions(query, [...queryParams]);
 		res.status(200).json({ discussions });
 	} catch (err) {
 		res.status(500).json({ error: err.message });
@@ -806,7 +803,7 @@ router.post("/comment/unlike", async (req, res) => {
 		const existinglike = await queryAsync(checklikeQuery, [
 			user_id,
 			comment_id,
-                  active
+			active,
 		]);
 
 		if (existinglike.length === 0) {
@@ -844,7 +841,7 @@ router.post("/comment/unlike", async (req, res) => {
 router.post("/fetchComments", async (req, res) => {
 	const { blog_id } = req.body;
 
-      if (!(await checkIfBlogExist(blog_id)))
+	if (!(await checkIfBlogExist(blog_id)))
 		return res.status(400).json({ message: "Blog Id is invalid" });
 
 	try {
