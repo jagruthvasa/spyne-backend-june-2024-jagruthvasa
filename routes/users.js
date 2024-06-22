@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const connection = require("../config/db");
+const fileUpload = require("express-fileupload");
+
+router.use(fileUpload());
 
 const active = 1;
 const inactive = 0;
