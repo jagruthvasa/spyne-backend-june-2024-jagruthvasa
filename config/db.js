@@ -3,20 +3,38 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
-const connection = mysql.createConnection({
+const connectionConfig = mysql.createConnection({
 	host: process.env.DB_HOST,
 	user: process.env.DB_USER,
 	password: process.env.DB_PASSWORD,
 	database: process.env.DB_NAME,
 });
 
-connection.connect((err) => {
-	if (err) {
-		console.error("Error connecting to MySQL:", err);
-		return;
-	}
-	console.log("Connected to MySQL");
-});
+let connection;
+
+const handleDisconnect = () => {
+	connection = mysql.createConnection(connectionConfig);
+
+	connection.connect((err) => {
+		if (err) {
+			console.error("Error connecting to MySQL:", err);
+			setTimeout(handleDisconnect, 2000);
+		} else {
+			console.log("Connected to MySQL");
+		}
+	});
+
+	connection.on("error", (err) => {
+		if (err.code === "PROTOCOL_CONNECTION_LOST") {
+			console.error("MySQL connection lost. Reconnecting...");
+			handleDisconnect();
+		} else {
+			throw err;
+		}
+	});
+};
+
+handleDisconnect();
 
 const createTables = () => {
 	const userTableQuery = `
@@ -157,11 +175,16 @@ const createTables = () => {
 		}
 	});
 
-  connection.query(GoogleDriveImages, (err, results) => {
+	connection.query(GoogleDriveImages, (err, results) => {
 		if (err) {
-			console.error("Error creating google drive images table:", err);
+			console.error(
+				"Error creating google drive images table:",
+				err
+			);
 		} else {
-			console.log("google drive images table created or already exists");
+			console.log(
+				"google drive images table created or already exists"
+			);
 		}
 	});
 };

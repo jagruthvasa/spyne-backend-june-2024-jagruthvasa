@@ -66,6 +66,7 @@ async function isUserExist(id) {
 // Create User
 router.post("/create", async (req, res) => {
 	const { name, mobile_number, email } = req.body;
+	console.log(name, mobile_number, email, typeof name, typeof mobile_number, typeof email)
 	const created = Math.floor(Date.now() / 1000);
 	const updated = created;
 
@@ -133,6 +134,7 @@ router.post("/create", async (req, res) => {
 // Update User
 router.post("/update", async (req, res) => {
 	const { id, name, mobile_number, email } = req.body;
+	console.log(id , name, mobile_number, email, typeof id, typeof name, typeof mobile_number, typeof email)
 	const userId = id || undefined;
 	const userName = name || undefined;
 	const userMobileNumber = mobile_number || undefined;
